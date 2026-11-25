@@ -756,24 +756,24 @@ def login_screen():
     )
         with st.expander("Admin Password Recovery"):
             with st.form("admin_recovery_form"):
-            recovery_username = st.text_input("Admin username")
+               recovery_username = st.text_input("Admin username")
 
-            recovery_key = st.text_input(
-                "Private recovery key",
-                type="password",
-            )
+                recovery_key = st.text_input(
+                    "Private recovery key",
+                    type="password",
+                )
 
-            new_password = st.text_input(
-                "New password",
-                type="password",
-            )
+                new_password = st.text_input(
+                    "New password",
+                    type="password",
+                )
 
-            confirm_password = st.text_input(
-                "Confirm new password",
-                type="password",
-            )
+                confirm_password = st.text_input(
+                    "Confirm new password",
+                    type="password",
+                )
 
-            recover = st.form_submit_button("Reset Admin Password")
+                recover = st.form_submit_button("Reset Admin Password")
 
         if recover:
             stored_key = st.secrets.get("ADMIN_RECOVERY_KEY", "")
