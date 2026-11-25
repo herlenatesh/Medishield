@@ -1,0 +1,6 @@
+streamlit
+cryptography
+qrcode[pil]
+pandas
+plotly
+pytest
