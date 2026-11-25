@@ -697,7 +697,36 @@ def user_count():
         return conn.execute(
             "SELECT COUNT(*) FROM users"
         ).fetchone()[0]
+def reset_admin_password(username, new_password):
+    username = username.strip()
 
+    if len(new_password) < 10:
+        return False, "Password must contain at least 10 characters."
+
+    digest, salt = hash_password(new_password)
+
+    with get_connection() as conn:
+        result = conn.execute(
+            """
+            UPDATE users
+            SET password_hash = ?, salt = ?
+            WHERE username = ? AND role = 'Admin'
+            """,
+            (digest, salt, username),
+        )
+
+        if result.rowcount == 0:
+            return False, "Admin account not found."
+
+    log_event(
+        "Admin password reset",
+        username,
+        "ACCEPTED",
+        "Admin password reset using recovery process.",
+        username,
+    )
+
+    return True, "Admin password reset successfully."
 
 def get_users_df():
     with get_connection() as conn:
@@ -725,12 +754,55 @@ def login_screen():
         """),
         unsafe_allow_html=True,
     )
+        with st.expander("Admin Password Recovery"):
+            with st.form("admin_recovery_form"):
+            recovery_username = st.text_input("Admin username")
 
-    if user_count() == 0:
-        st.subheader("Create the First Administrator")
+            recovery_key = st.text_input(
+                "Private recovery key",
+                type="password",
+            )
 
-        st.info(
-            "No accounts exist yet. Create the initial Admin account."
+            new_password = st.text_input(
+                "New password",
+                type="password",
+            )
+
+            confirm_password = st.text_input(
+                "Confirm new password",
+                type="password",
+            )
+
+            recover = st.form_submit_button("Reset Admin Password")
+
+        if recover:
+            stored_key = st.secrets.get("ADMIN_RECOVERY_KEY", "")
+
+            if not stored_key:
+                st.error("Recovery is not configured.")
+
+            elif not hmac.compare_digest(recovery_key, stored_key):
+                st.error("Invalid recovery key.")
+
+            elif new_password != confirm_password:
+                st.error("Passwords do not match.")
+
+            else:
+                success, message = reset_admin_password(
+                    recovery_username,
+                    new_password,
+                )
+
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+
+        if user_count() == 0:
+            st.subheader("Create the First Administrator")
+
+            st.info(
+                "No accounts exist yet. Create the initial Admin account."
         )
 
         with st.form("initial_admin_form"):
